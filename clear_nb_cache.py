@@ -5,14 +5,14 @@
 # TODO: Do not delete anything that starts with *jython* (including subdirectories and directory contents).
 
 import os
-from sys import stderr
+from sys import stderr, argv
 from shutil import rmtree
 
 def get_immediate_subdirectories(a_dir):
     return [name for name in os.listdir(a_dir)
             if os.path.isdir(os.path.join(a_dir, name))]
 
-def clean_nb_cache(cache_dir):
+def clean_nb_cache(cache_dir, verbose):
 	"""
 	Given a directory containing the Netbeans cache structure, check that it has
 	subdirectories and ask which one to clean, then delete all contents in 'index'
@@ -32,10 +32,12 @@ def clean_nb_cache(cache_dir):
 			for a_dir in subdirs:
 				if str(a_dir).startswith("jython"):
 					continue  # ignore jython directories
-					print("Cleaning " + a_dir + " ...")
+					if (verbose):
+						print("Cleaning " + a_dir + " ...")
 					total_dirs += 1
 				rmtree(os.path.join(clean_full, a_dir), ignore_errors=True)  # Will delete the dir as well
-				print ("Removing " + os.path.join(clean_full, a_dir) + " ...")
+				if (verbose):
+					print ("Cleaning " + os.path.join(clean_full, a_dir) + " ...")
 				total_dirs += 1
 		else:
 			print("No cache directory supplied!", file=stderr)
@@ -43,19 +45,19 @@ def clean_nb_cache(cache_dir):
 		print("Cannot find a netbeans version in " + cache_dir, file=stderr)
 	print("Cleaning cache completed. (%s directories cleaned.)" % total_dirs)
 
-def main():
-	print("NetBeans Cache Cleaner\nPlease exit NetBeans if you haven't already ...")
+def main(verbose):
+	print("NetBeans Cache Cleaner\nPlease exit NetBeans if you haven't already ...\nSupply -v or --verbose for verbose output.\n")
 	home_dir = os.getenv("HOME", "/home")  # Get the location of $HOME (UNIX)
 	cache_dir = os.path.join(home_dir, ".cache", "netbeans")
 	if os.path.isdir(cache_dir): # Get a list of directories in $HOME/.cache/netbeans/, assuming it exists
-		clean_nb_cache(cache_dir)
+		clean_nb_cache(cache_dir, verbose)
 	elif os.path.isdir(os.path.join(home_dir, ".netbeans", "cache")):  # Alternate cache location
-		clean_nb_cache(os.path.join(home_dir, ".netbeans", "cache"))
+		clean_nb_cache(os.path.join(home_dir, ".netbeans", "cache"), verbose)
 	elif os.getenv("OS", "?").startswith("Windows") and len(os.getenv("USERPROFILE", "")) > 0: # NetBeans puts its cache in different location in home dir on Windows
 		home_dir = os.getenv("USERPROFILE", "")  # Windows Equivalent of HOME
 		cache_dir = os.path.join(home_dir, "AppData", "Local", "NetBeans", "Cache")
 		if os.path.isdir(cache_dir):
-			clean_nb_cache(cache_dir)
+			clean_nb_cache(cache_dir, verbose)
 		else:
 			print("Cannot find NetBeans cache in " + cache_dir, file=stderr)
 	else:
@@ -64,4 +66,5 @@ def main():
 # Delete all files and directories (recursive) within the 'index' dir
 
 if __name__ == "__main__":
-	main()
+	verbose = ("-v" in argv) or ("--verbose" in argv)
+	main(verbose)
